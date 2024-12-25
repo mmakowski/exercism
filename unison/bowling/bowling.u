@@ -9,3 +9,36 @@ unique type bowling.Error = Error Text
 bowling.score : [Nat] -> Either Error Nat
 bowling.score rolls =
   todo "implement score function"
+
+type bowling.Frame = Open Nat Nat
+                   | Spare Nat
+                   | Strike
+type bowling.FinalFrame = FinalFrame Nat Nat (Optional Nat)
+type bowling.Game = Game [Frame] FinalFrame
+
+bowling.totalFrames = 10
+
+bowling.Game.fromRolls : [Nat] -> {Throw Error} Game
+bowling.Game.fromRolls rolls =
+  buildNonFinalFrames : Nat -> [Nat] -> [Frame] -> {Throw Error}([Frame], [Nat])
+  buildNonFinalFrames frameNum rolls frames =
+    if frameNum == totalFrames then (frames, rolls)
+    else
+      (frame, remainingRolls) = Frame.fromRolls rolls
+      buildNonFinalFrames (frameNum + 1) remainingRolls (frames :+ frame)
+  (nonFinalFrames, finalFrameRolls) = buildNonFinalFrames 1 rolls []
+  finalFrame = FinalFrame.fromRolls finalFrameRolls
+  Game nonFinalFrames finalFrame
+
+bowling.Frame.fromRolls : [Nat] -> {Throw Error}(Frame, [Nat])
+bowling.Frame.fromRolls = cases
+  first +: rest | first === 10 -> (Strike, rest)
+  [first, second] ++ rest | first + second === 10 -> (Spare first, rest)
+  [first, second] ++ rest | first + second < 10 -> (Open first second, rest)
+  invalidRolls -> throw <| Error ("can't build frame from " ++ (List.toText Nat.toText invalidRolls))
+
+bowling.FinalFrame.fromRolls : [Nat] -> {Throw Error}FinalFrame
+bowling.FinalFrame.fromRolls = cases
+  [first, second] | first + second < 10 -> FinalFrame first second None
+  [first, second, third] | (first === 10) || (first + second === 10) -> FinalFrame first second (Some third)
+  invalidRolls -> throw <| Error ("can't build final frame from " ++ (List.toText Nat.toText invalidRolls))

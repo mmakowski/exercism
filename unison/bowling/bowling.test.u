@@ -61,26 +61,197 @@ bowling.test.ex20 = let
 bowling.test.ex21 = let
   Test.label.deprecated "bonus roll for a spare in the last frame must be rolled before score can be calculated" <| Test.expect (score [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,7,3] === Left ( Error "Score cannot be taken until the end of the game"))
 
-test> bowling.tests = runAll [
-  bowling.test.ex1,
-  bowling.test.ex2,
-  bowling.test.ex3,
-  bowling.test.ex4,
-  bowling.test.ex5,
-  bowling.test.ex6,
-  bowling.test.ex7,
-  bowling.test.ex8,
-  bowling.test.ex9,
-  bowling.test.ex10,
-  bowling.test.ex11,
-  bowling.test.ex12,
-  bowling.test.ex13,
-  bowling.test.ex14,
-  bowling.test.ex15,
-  bowling.test.ex16,
-  bowling.test.ex17,
-  bowling.test.ex18,
-  bowling.test.ex19,
-  bowling.test.ex20,
-  bowling.test.ex21
-]
+-- test> bowling.tests = runAll [
+--   bowling.test.ex1,
+--   bowling.test.ex2,
+--   bowling.test.ex3,
+--   bowling.test.ex4,
+--   bowling.test.ex5,
+--   bowling.test.ex6,
+--   bowling.test.ex7,
+--   bowling.test.ex8,
+--   bowling.test.ex9,
+--   bowling.test.ex10,
+--   bowling.test.ex11,
+--   bowling.test.ex12,
+--   bowling.test.ex13,
+--   bowling.test.ex14,
+--   bowling.test.ex15,
+--   bowling.test.ex16,
+--   bowling.test.ex17,
+--   bowling.test.ex18,
+--   bowling.test.ex19,
+--   bowling.test.ex20,
+--   bowling.test.ex21
+-- ]
+
+test.ensureEqualWithThrow : '{Throw Error} a -> a -> {Exception} ()
+test.ensureEqualWithThrow left right =
+  toException = Throw.toException (cases Error msg -> failure msg ())
+  test.ensureEqual (left |> toException) right
+
+test.ensureThrows : '{Throw Error} a -> {Exception} ()
+test.ensureThrows thunk =
+  value = Throw.toEither thunk
+  ensureWith value (isLeft value)
+
+test> bowling.Frame.fromRolls.tests.validStrike = test.verify do
+  ensureEqualWithThrow '(Frame.fromRolls [10, 1, 2]) (Strike, [1, 2]) 
+test> bowling.Frame.fromRolls.tests.validStrikeNoMoreRolls = test.verify do
+  ensureEqualWithThrow '(Frame.fromRolls [10]) (Strike, []) 
+test> bowling.Frame.fromRolls.tests.validSpare = test.verify do
+  ensureEqualWithThrow '(Frame.fromRolls [3, 7, 1, 2]) (Spare 3, [1, 2])
+test> bowling.Frame.fromRolls.tests.validSpareFirstZero = test.verify do
+  ensureEqualWithThrow '(Frame.fromRolls [0, 10, 1, 2]) (Spare 0, [1, 2])
+test> bowling.Frame.fromRolls.tests.validOpen = test.verify do
+  ensureEqualWithThrow '(Frame.fromRolls [1, 2, 3, 4]) (Open 1 2, [3, 4])
+test> bowling.Frame.fromRolls.tests.invalidEmptyRolls = test.verify do
+  ensureThrows '(Frame.fromRolls [])
+test> bowling.Frame.fromRolls.tests.invalidNotEnoughRolls = test.verify do
+  ensureThrows '(Frame.fromRolls [1])
+test> bowling.Frame.fromRolls.tests.invalidValueTooHigh = test.verify do
+  ensureThrows '(Frame.fromRolls [11, 1, 2])
+test> bowling.Frame.fromRolls.tests.invalidTotalTooHigh = test.verify do
+  ensureThrows '(Frame.fromRolls [5, 6, 1, 2])
+
+test> bowling.FinalFrame.fromRolls.tests.validOpen = test.verify do
+  ensureEqualWithThrow '(FinalFrame.fromRolls [1, 2]) (FinalFrame 1 2 None)
+test> bowling.FinalFrame.fromRolls.tests.validSpare = test.verify do
+  ensureEqualWithThrow '(FinalFrame.fromRolls [1, 9, 2]) (FinalFrame 1 9 (Some 2))
+test> bowling.FinalFrame.fromRolls.tests.validSpareFirstZero = test.verify do
+  ensureEqualWithThrow '(FinalFrame.fromRolls [0, 10, 1]) (FinalFrame 0 10 (Some 1))
+test> bowling.FinalFrame.fromRolls.tests.validSpareThenZero = test.verify do
+  ensureEqualWithThrow '(FinalFrame.fromRolls [1, 9, 0]) (FinalFrame 1 9 (Some 0))
+test> bowling.FinalFrame.fromRolls.tests.validSpareThenStrike = test.verify do
+  ensureEqualWithThrow '(FinalFrame.fromRolls [1, 9, 10]) (FinalFrame 1 9 (Some 10))
+test> bowling.FinalFrame.fromRolls.tests.validStrike = test.verify do
+  ensureEqualWithThrow '(FinalFrame.fromRolls [10, 1, 2]) (FinalFrame 10 1 (Some 2))
+test> bowling.FinalFrame.fromRolls.tests.validStrikeThenSpare = test.verify do
+  ensureEqualWithThrow '(FinalFrame.fromRolls [10, 1, 9]) (FinalFrame 10 1 (Some 9))
+test> bowling.FinalFrame.fromRolls.tests.validTwoStrikes = test.verify do
+  ensureEqualWithThrow '(FinalFrame.fromRolls [10, 10, 9]) (FinalFrame 10 10 (Some 9))
+test> bowling.FinalFrame.fromRolls.tests.validThreeStrikes = test.verify do
+  ensureEqualWithThrow '(FinalFrame.fromRolls [10, 10, 10]) (FinalFrame 10 10 (Some 10))
+test> bowling.FinalFrame.fromRolls.tests.invalidEmptyRolls = test.verify do
+  ensureThrows '(FinalFrame.fromRolls [])
+test> bowling.FinalFrame.fromRolls.tests.invalidNotEnoughRolls = test.verify do
+  ensureThrows '(FinalFrame.fromRolls [1])
+test> bowling.FinalFrame.fromRolls.tests.invalidTooManyRolls = test.verify do
+  ensureThrows '(FinalFrame.fromRolls [1, 2, 3])
+test> bowling.FinalFrame.fromRolls.tests.invalidValueTooHigh = test.verify do
+  ensureThrows '(FinalFrame.fromRolls [11, 1])
+test> bowling.FinalFrame.fromRolls.tests.invalidTotalTooHigh = test.verify do
+  ensureThrows '(FinalFrame.fromRolls [5, 6, 1])
+test> bowling.FinalFrame.fromRolls.tests.invalidTooManyRollsWithStrikes = test.verify do
+  ensureThrows '(FinalFrame.fromRolls [10, 10, 10, 0])
+
+test> bowling.Game.fromRolls.tests.validOpenFrames = test.verify do
+  rolls = [
+    0, 0,  -- 1
+    1, 1,  -- 2
+    2, 2,  -- 3
+    3, 3,  -- 4
+    4, 4,  -- 5
+    4, 5,  -- 6
+    3, 6,  -- 7
+    2, 7,  -- 8
+    1, 8,  -- 9
+    0, 9,  -- 10
+  ]
+  expected = (
+    Game [
+      Open 0 0,
+      Open 1 1,
+      Open 2 2,
+      Open 3 3,
+      Open 4 4,
+      Open 4 5,
+      Open 3 6,
+      Open 2 7,
+      Open 1 8,
+    ]
+    (FinalFrame 0 9 None)
+  )
+  ensureEqualWithThrow '(Game.fromRolls rolls) expected
+test> bowling.Game.fromRolls.tests.validPerfectGame = test.verify do
+  rolls = [
+    10,  -- 1
+    10,  -- 2
+    10,  -- 3
+    10,  -- 4
+    10,  -- 5
+    10,  -- 6
+    10,  -- 7
+    10,  -- 8
+    10,  -- 9
+    10, 10, 10  -- 10
+  ]
+  expected = (
+    Game [
+      Strike,
+      Strike,
+      Strike,
+      Strike,
+      Strike,
+      Strike,
+      Strike,
+      Strike,
+      Strike,
+    ]
+    (FinalFrame 10 10 (Some 10))
+  )
+  ensureEqualWithThrow '(Game.fromRolls rolls) expected
+test> bowling.Game.fromRolls.tests.validSpares = test.verify do
+  rolls = [
+    0, 10,  -- 1
+    1, 9,  -- 2
+    2, 8,  -- 3
+    3, 7,  -- 4
+    4, 6,  -- 5
+    5, 5,  -- 6
+    6, 4,  -- 7
+    7, 3,  -- 8
+    8, 2,  -- 9
+    9, 1, 0 -- 10
+  ]
+  expected = (
+    Game [
+      Spare 0,
+      Spare 1,
+      Spare 2,
+      Spare 3,
+      Spare 4,
+      Spare 5,
+      Spare 6,
+      Spare 7,
+      Spare 8,
+    ]
+    (FinalFrame 9 1 (Some 0))
+  )
+  ensureEqualWithThrow '(Game.fromRolls rolls) expected
+test> bowling.Game.fromRolls.tests.invalidNotEnoughRolls = test.verify do
+  ensureThrows '(Game.fromRolls [
+    10,  -- 1
+    10,  -- 2
+    10,  -- 3
+    10,  -- 4
+    10,  -- 5
+    10,  -- 6
+    10,  -- 7
+    10,  -- 8
+    10,  -- 9
+    10, 0  -- 10
+  ])
+test> bowling.Game.fromRolls.tests.invalidTooManyRolls = test.verify do
+  ensureThrows '(Game.fromRolls [
+    10,  -- 1
+    10,  -- 2
+    10,  -- 3
+    10,  -- 4
+    10,  -- 5
+    10,  -- 6
+    10,  -- 7
+    10,  -- 8
+    10,  -- 9
+    10, 10, 10, 0  -- 10
+  ])
