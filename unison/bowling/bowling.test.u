@@ -61,29 +61,29 @@ bowling.test.ex20 = let
 bowling.test.ex21 = let
   Test.label.deprecated "bonus roll for a spare in the last frame must be rolled before score can be calculated" <| Test.expect (score [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,7,3] === Left ( Error "Score cannot be taken until the end of the game"))
 
--- test> bowling.tests = runAll [
---   bowling.test.ex1,
---   bowling.test.ex2,
---   bowling.test.ex3,
---   bowling.test.ex4,
---   bowling.test.ex5,
---   bowling.test.ex6,
---   bowling.test.ex7,
---   bowling.test.ex8,
---   bowling.test.ex9,
---   bowling.test.ex10,
---   bowling.test.ex11,
---   bowling.test.ex12,
---   bowling.test.ex13,
---   bowling.test.ex14,
---   bowling.test.ex15,
---   bowling.test.ex16,
---   bowling.test.ex17,
---   bowling.test.ex18,
---   bowling.test.ex19,
---   bowling.test.ex20,
---   bowling.test.ex21
--- ]
+test> bowling.tests = runAll [
+  bowling.test.ex1,
+  bowling.test.ex2,
+  bowling.test.ex3,
+  bowling.test.ex4,
+  bowling.test.ex5,
+  bowling.test.ex6,
+  bowling.test.ex7,
+  bowling.test.ex8,
+  bowling.test.ex9,
+  bowling.test.ex10,
+  bowling.test.ex11,
+  bowling.test.ex12,
+  bowling.test.ex13,
+  bowling.test.ex14,
+  bowling.test.ex15,
+  bowling.test.ex16,
+  bowling.test.ex17,
+  bowling.test.ex18,
+  bowling.test.ex19,
+  bowling.test.ex20,
+  bowling.test.ex21
+]
 
 test.ensureEqualWithThrow : '{Throw Error} a -> a -> {Exception} ()
 test.ensureEqualWithThrow left right =

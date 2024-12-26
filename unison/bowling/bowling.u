@@ -4,11 +4,12 @@ use Either Right Left
 unique type bowling.Error = Error Text
 
 {{
-  {score} takes in a list of numbers representing the pins knocked down for each roll of the bowling game, and should return either the total score or an error.
+  {bowling.score} takes in a list of numbers representing the pins knocked down for each roll of the bowling game, and should return either the total score or an error.
 }}
 bowling.score : [Nat] -> Either Error Nat
 bowling.score rolls =
-  todo "implement score function"
+  '(rolls |> Game.fromRolls |> Game.score |> Right) |> 
+  (catchWith (_ -> Left (Error "Score cannot be taken until the end of the game")))
 
 type bowling.Frame = Open Nat Nat
                    | Spare Nat
@@ -16,11 +17,37 @@ type bowling.Frame = Open Nat Nat
 type bowling.FinalFrame = FinalFrame Nat Nat (Optional Nat)
 type bowling.Game = Game [Frame] FinalFrame
 
+bowling.Game.score : Game -> {Throw Error} Nat
+bowling.Game.score = cases Game frames finalFrame ->
+  step : Frame -> (Nat, ScoringState) -> (Nat, ScoringState)
+  step frame = cases (total, state) ->
+    newState = Frame.score (firstRoll state) (secondRoll state) frame
+    (total + (ScoringState.score newState), newState)
+  finalFrameState = FinalFrame.score finalFrame
+  (total, _) = List.foldRight step ((ScoringState.score finalFrameState), finalFrameState) frames
+  total
+
+type ScoringState = {
+  score : Nat,
+  firstRoll : Nat,
+  secondRoll : Nat
+}
+
+bowling.FinalFrame.score : FinalFrame -> {Throw Error} ScoringState
+bowling.FinalFrame.score = cases FinalFrame first second maybeThird ->
+  ScoringState (first + second + Optional.getOrElse 0 maybeThird) first second
+
+bowling.Frame.score : Nat -> Nat -> Frame -> {Throw Error} ScoringState
+bowling.Frame.score firstNextRoll secondNextRoll = cases
+  Open first second -> ScoringState (first + second) first second
+  Spare first -> ScoringState (10 + firstNextRoll) first (10 - first)
+  Strike -> ScoringState (10 + firstNextRoll + secondNextRoll) 10 firstNextRoll
+
 bowling.totalFrames = 10
 
 bowling.Game.fromRolls : [Nat] -> {Throw Error} Game
 bowling.Game.fromRolls rolls =
-  buildNonFinalFrames : Nat -> [Nat] -> [Frame] -> {Throw Error}([Frame], [Nat])
+  buildNonFinalFrames : Nat -> [Nat] -> [Frame] -> {Throw Error} ([Frame], [Nat])
   buildNonFinalFrames frameNum rolls frames =
     if frameNum == totalFrames then (frames, rolls)
     else
@@ -30,14 +57,14 @@ bowling.Game.fromRolls rolls =
   finalFrame = FinalFrame.fromRolls finalFrameRolls
   Game nonFinalFrames finalFrame
 
-bowling.Frame.fromRolls : [Nat] -> {Throw Error}(Frame, [Nat])
+bowling.Frame.fromRolls : [Nat] -> {Throw Error} (Frame, [Nat])
 bowling.Frame.fromRolls = cases
   first +: rest | first === 10 -> (Strike, rest)
   [first, second] ++ rest | first + second === 10 -> (Spare first, rest)
   [first, second] ++ rest | first + second < 10 -> (Open first second, rest)
   invalidRolls -> throw <| Error ("can't build frame from " ++ (List.toText Nat.toText invalidRolls))
 
-bowling.FinalFrame.fromRolls : [Nat] -> {Throw Error}FinalFrame
+bowling.FinalFrame.fromRolls : [Nat] -> {Throw Error} FinalFrame
 bowling.FinalFrame.fromRolls = cases
   [first, second] | first + second < 10 -> FinalFrame first second None
   [first, second, third] | (first === 10) || (first + second === 10) -> FinalFrame first second (Some third)
